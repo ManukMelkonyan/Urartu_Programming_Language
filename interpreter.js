@@ -1,12 +1,27 @@
 class Expression{
+    constructor(tokens){
+        // this.expression = tokens.join('');
+    }
+}
+
+class Statement{
     constructor(){
 
     }
 }
 
-class Statement{
-    constructor(type, ){
+class AssignmentStatement{
+    constructor(name, expression){
+        this.name = name;
+        this.expression = expression;
+    }
+}
 
+class FunctionStatement{
+    constructor(name, args, bodyStatements){
+        this.name = name;
+        this.arguments = args;
+        this.bodyStatements = bodyStatements;
     }
 }
 
@@ -36,15 +51,22 @@ class Interpreter{
     run(code){
         const regex = /('[^']*'{0,1})|("[^"]*"{0,1})|([+\-*\/\(\)\[\]:,;])|([^\s'"+\-*\/\(\)\[\],:;]+)/g;
         this.components = code.match(regex);
+        // console.log(new Expression(this.components).expression);
         console.log(this.components);
-        this.process(this.memory);
+        this.memory['main'] = new FunctionStatement('main', [], []);
+        while(this.components.length){
+            const nextStatement = this.getNextStatemt();
+            if(nextStatement){
+                this.memory['main'].bodyStatements.push(nextStatement);
+            }
+        }
     }
 
-    process(memory, end = ';', scope = 'global'){
+    getNextStatemt(){
+        let statement = null;
         let first = this.components.shift();
-        if(first === end){
-            return;
-        }
+        if(first === ';') return statement;
+
         if(first === 'def'){
             let name = this.components.shift();
             
@@ -52,29 +74,10 @@ class Interpreter{
                 throw new Error(`Invalid identifier name: ${name}`);
             }
             else{
-                console.log('Type: function, Name: ' + name);
-                let possibleBracket = this.components.shift();
-                if(possibleBracket !== '('){
-                    throw new Error(`Invalid identifier name: ${name}`);
-                }
-                this.memory[name] = {
-                    name: name,
-                    type: 'function',
-                    initialized: false,
-                    memory: [],
-                    parameters: [],
-                    body: [],
-                }
-                let bracketStack = [possibleBracket];
-                this.memory[name].parameters = this.getParameters(bracketStack);
-                console.log(this.memory[name]);
-                console.log(this.components);
-                let possibleCurlyBracket = this.components.shift();
-                // console.log({possibleCurlyBracket});
-                if(possibleCurlyBracket !== '{'){
-                    throw new Error('Syntax error. Opening curly bracket expected for function decleration');
-                }
-                this.process(this.memory[name].memory, '}', 'function');
+                let args = this.getParameters();
+                let bodyStatements = this.getFunctionBody();
+
+                statement = new FunctionStatement(name, args, bodyStatements);
             }
         }
         else if (first === 'var'){
@@ -86,21 +89,41 @@ class Interpreter{
 
             let possibleAssignmentOperator = this.components.shift();
             if(possibleAssignmentOperator === '='){
-                
+                let assignment = this.getAssignmentTokens();
+
+                statement =  new AssignmentStatement(name, assignment);
             }
         }
         else if(!this.isValidIdentifier(first)){
             // if()
             throw new Error('Invalid syntax: ' + first);
         }
+        // console.log(statement);
+        return statement;
     }
-    getFunctionBodyStatements(){
+    // getFunctionBodyStatements(){
+        
+    // }
 
+    getAssignmentTokens(){
+        let tokens = [];
+        while(this.components.length){
+            let current = this.components.shift();
+            console.log(current);
+            if(current === ';'){
+                break;
+            }
+
+            tokens.push(current);
+        }
+        console.log(this.components);
+        return tokens;
     }
-
-
 
     getParameters(){
+        if(this.components.shift() !== '('){
+            throw new Error('Invalid syntax: The parameters of the function must be wrapped into parantheses!');
+        }
         let parameters = [];
         if(this.components[0] === ','){
             throw new Error(`Invalid syntax. Parameter identifier expected before ','`);
@@ -134,30 +157,28 @@ class Interpreter{
         throw new Error('Invalid syntax. Function parameters must be wrapped into parantheses!');
     }
 
-    processBrackets(stack, owner, components){
-        let params = [];
-        let ownersStack = [owner];
-        let currentExpression = new Expression();
-        while(stack.length){
-            let current = components.shift();
-            console.log({current});
-            console.log({next: components[0]});
-            if(current === '('){
-                stack.push(current);
-            }
-            else if(current === ')'){
-                stack.pop()
-                ownersStack.pop();
-            }
-            else if(this.isValidIdentifier(current) && (components[0] === ',' || (components[0] === ')' && ownersStack.length === 1))){
-                params.push(current);
-            }
+    getFunctionBody(){
+        if(this.components.shift() !== '{'){
+            throw new Error('Syntax error. Opening curly bracket expected for function decleration');
         }
-        return params;
-    }
-
-    processFunctionBody(){
-
+        let bracketStack = [-1];
+        let statements = [];
+        while(this.components.length){
+            
+            let current = this.components[0];
+            if(current === '}'){
+                bracketStack.pop();
+                this.components.pop();
+            }
+            else if(current === '{'){
+                bracketStack.push(-1);
+            }
+            
+            if(bracketStack.length === 0){
+                return statements;
+            }
+            statements.push(this.getNextStatemt());
+        }
     }
 
     processExpression(exp){
@@ -170,6 +191,12 @@ PyJS.run(`
 def f (a, b, c){
     var x = 5;
     var y = 8;
-    return a + b;
+    def f1() {
+        var t = 'asda';
+        ;
+        var p = " ' fasf ";
+    }
 }
 `)
+
+console.dir(PyJS.memory['main']);
