@@ -10,6 +10,20 @@ class Statement{
     }
 }
 
+class IfStatement{
+    constructor(condition, statements){
+        this.condition = condition;
+        this.statements = statements;
+    }
+}
+
+class WhileStatement{
+    constructor(condition, statements){
+        this.condition = condition;
+        this.statements = statements;
+    }
+}
+
 class AssignmentStatement{
     constructor(name, expression){
         this.name = name;
@@ -36,7 +50,7 @@ class Interpreter{
         this.memory = {};
         this.callStack = [];
         this.reservedKeywords = [
-            'var', 'def', 'for', 'while', 'if', 'elif', 'else', 'range'
+            'def', 'for', 'while', 'if', 'elif', 'else', 'range'
         ]
     }
 
@@ -55,14 +69,14 @@ class Interpreter{
         console.log(this.components);
         this.memory['main'] = new FunctionStatement('main', [], []);
         while(this.components.length){
-            const nextStatement = this.getNextStatemt();
+            const nextStatement = this.getNextStatement();
             if(nextStatement){
                 this.memory['main'].bodyStatements.push(nextStatement);
             }
         }
     }
 
-    getNextStatemt(){
+    getNextStatement(){
         let statement = null;
         let first = this.components.shift();
         if(first === ';') return statement;
@@ -75,22 +89,38 @@ class Interpreter{
             }
             else{
                 let args = this.getParameters();
-                let bodyStatements = this.getFunctionBody();
+                let bodyStatements = this.getBlockStatements();
 
                 statement = new FunctionStatement(name, args, bodyStatements);
             }
         }
-        else if (first === 'var'){
-            let name = this.components.shift();
+        else if(first === 'if'){
+            // console.log(this.components);
+            let condition = this.getConditionTokens();
+            let statements = this.getBlockStatements();
+            statement = new IfStatement(condition, statements);
+        }
+        else if(first === 'while'){
+            let condition = this.getConditionTokens();
+            let statements = this.getBlockStatements();
+            statement = new WhileStatement(condition, statements);
+        }
+        else if(first === 'for'){
             
-            if(!this.isValidIdentifier(name)){
-                throw new Error(`Invalid identifier name: ${name}`);
-            }
+        }
+        else if (this.isValidIdentifier(first)){
+            let name = first;
+            
+            // if(!this.isValidIdentifier(name)){
+            //     throw new Error(`Invalid identifier name: ${name}`);
+            // }
 
             let possibleAssignmentOperator = this.components.shift();
-            if(possibleAssignmentOperator === '='){
+            if(possibleAssignmentOperator !== '='){
+                throw new Error('where is your assignment operator ?!!!');
+            }
+            else{
                 let assignment = this.getAssignmentTokens();
-
                 statement =  new AssignmentStatement(name, assignment);
             }
         }
@@ -101,9 +131,6 @@ class Interpreter{
         // console.log(statement);
         return statement;
     }
-    // getFunctionBodyStatements(){
-        
-    // }
 
     getAssignmentTokens(){
         let tokens = [];
@@ -157,7 +184,7 @@ class Interpreter{
         throw new Error('Invalid syntax. Function parameters must be wrapped into parantheses!');
     }
 
-    getFunctionBody(){
+    getBlockStatements(){
         if(this.components.shift() !== '{'){
             throw new Error('Syntax error. Opening curly bracket expected for function decleration');
         }
@@ -168,7 +195,7 @@ class Interpreter{
             let current = this.components[0];
             if(current === '}'){
                 bracketStack.pop();
-                this.components.pop();
+                this.components.shift();
             }
             else if(current === '{'){
                 bracketStack.push(-1);
@@ -177,26 +204,68 @@ class Interpreter{
             if(bracketStack.length === 0){
                 return statements;
             }
-            statements.push(this.getNextStatemt());
+            const nextStatement = this.getNextStatement();
+            if(nextStatement){
+                statements.push(nextStatement);
+            }
         }
     }
 
-    processExpression(exp){
-        
+    getConditionTokens(){
+        if(this.components.shift() !== '('){
+            throw new Error('Syntax error. Opening bracket expected for condional expression');
+        }
+        let bracketStack = [];
+        let expressionTokens = [];
+        while(this.components.length){
+            let currentToken = this.components.shift();
+            if(currentToken === ')'){
+                if(bracketStack.length === 0){
+                    if(expressionTokens.length === 0){
+                        throw new Error('Invalid syntax: conditional statement must be passed')
+                    }
+                    return expressionTokens;
+                }
+                else{
+                    bracketStack.pop();
+                }
+            }
+            else if(currentToken === '('){
+                bracketStack.push(-1);
+            }
+            expressionTokens.push(currentToken);
+        }
+
+        throw new Error('Invalid syntax: conditional statement must be wrapped in parantheses')
+
+    }
+
+    getExpression(){
     }
 }
 
 let PyJS = new Interpreter();
-PyJS.run(`
-def f (a, b, c){
-    var x = 5;
-    var y = 8;
-    def f1() {
-        var t = 'asda';
-        ;
-        var p = " ' fasf ";
+try{
+    PyJS.run(`
+    def f (a, b, c){
+        x = 5;
+        y = 8;
+        if(k + l){
+            k = 10;
+            l = 66;
+        }
+        def f1() {
+            t = 'asda';
+            ;
+            p = " ' fasf ";
+        }
     }
+    `)
+
 }
-`)
+catch (e){
+    console.log(e);
+    // console.log(PyJS.components);
+}
 
 console.dir(PyJS.memory['main']);
