@@ -40,8 +40,9 @@ class FunctionStatement{
 }
 
 class FunctionCall{
-    constructor(){
-
+    constructor(name, args){
+        this.name = name;
+        this.args = args;
     }
 }
 
@@ -66,7 +67,7 @@ class Interpreter{
         const regex = /('[^']*'{0,1})|("[^"]*"{0,1})|([+\-*\/\(\)\[\]:,;])|([^\s'"+\-*\/\(\)\[\],:;]+)/g;
         this.components = code.match(regex);
         // console.log(new Expression(this.components).expression);
-        console.log(this.components);
+        // console.log(this.components);
         this.memory['main'] = new FunctionStatement('main', [], []);
         while(this.components.length){
             const nextStatement = this.getNextStatement();
@@ -115,13 +116,14 @@ class Interpreter{
             //     throw new Error(`Invalid identifier name: ${name}`);
             // }
 
-            let possibleAssignmentOperator = this.components.shift();
-            if(possibleAssignmentOperator !== '='){
-                throw new Error('where is your assignment operator ?!!!');
-            }
-            else{
+            let nextToken = this.components.shift();
+            if(nextToken === '='){
                 let assignment = this.getAssignmentTokens();
                 statement =  new AssignmentStatement(name, assignment);
+            }
+            else if(nextToken === '('){
+                let args = this.getArguments();
+                statement = new FunctionCall(name, args);
             }
         }
         else if(!this.isValidIdentifier(first)){
@@ -145,6 +147,58 @@ class Interpreter{
         }
         console.log(this.components);
         return tokens;
+    }
+
+    getArguments(){
+        let bracketStack = [-1];
+        let args = [];
+        if(this.components[0] === ','){
+            throw new Error(`Invalid syntax. Argument must be passed before ','`);
+        }
+        if(this.components[0] === ')'){
+            this.components.shift();
+            return args;
+        }
+        let currentArgumentTokens = [];
+        while(this.components.length){
+            
+            let current = this.components[0];
+            if(current === ')'){
+                bracketStack.pop();
+                this.components.shift();
+                if(bracketStack.length){
+                    currentArgumentTokens.push(current);
+                }
+            }
+            else if(current === '('){
+                bracketStack.push(-1);
+                currentArgumentTokens.push(current);
+                this.components.shift();
+            }
+            else if(current === ','){
+                if(currentArgumentTokens.length === 0){
+                    throw new Error(`Invalid syntax. Argument must be passed before ','`);
+                }
+                else{
+                    if(bracketStack.length === 1){
+                        args.push(currentArgumentTokens);
+                        currentArgumentTokens = [];
+                    }
+                    this.components.shift();
+                }
+            }
+            else{
+                currentArgumentTokens.push(current);
+                this.components.shift();
+            }
+            
+            if(bracketStack.length === 0){
+                if(currentArgumentTokens.length){
+                    args.push(currentArgumentTokens);
+                }
+                return args;
+            }
+        }
     }
 
     getParameters(){
@@ -250,6 +304,7 @@ try{
     def f (a, b, c){
         x = 5;
         y = 8;
+        main(1, a, a + b(0, 'f(', f(), t), c);
         if(k + l){
             k = 10;
             l = 66;
