@@ -155,7 +155,7 @@ class Interpreter{
         return tokens;
     }
 
-    getArguments(){
+    getArguments(tokens){
         let bracketStack = [-1];
         let args = [];
         if(this.components[0] === ','){
@@ -315,23 +315,23 @@ class Interpreter{
 }
 
 let Urartu = new Interpreter();
-Urartu.run(`
-    x = 5 + 8 * (c - l);
-`);
 // Urartu.run(`
-//     x = 5;
-//     y = 8;
-//     foo(1, a, a + b(0, 'f(', f(), t), c);
-//     if(k + l){
-//         k = 10;
-//         l = 66;
-//     }
-//     def f1() {
-//         t = 'asda';
-//         ;
-//         p = " ' fasf ";
-//     }
-// `)
+//     x = 5 + 8 * (c - l);
+// `);
+Urartu.run(`
+    x = 5;
+    y = 8;
+    foo(1, a, a + b(0, 'f(', f(), t), c);
+    if(k + l){
+        k = 10;
+        l = 66;
+    }
+    def f1() {
+        t = 'asda';
+        ;
+        p = " ' fasf ";
+    }
+`)
 
 
 console.dir(Urartu.memory['main']);
