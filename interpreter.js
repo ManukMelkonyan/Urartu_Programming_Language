@@ -116,12 +116,18 @@ class Interpreter{
             //     throw new Error(`Invalid identifier name: ${name}`);
             // }
 
-            let nextToken = this.components.shift();
+            let nextToken = this.components[0];
             if(nextToken === '='){
+                this.components.shift();
                 let assignment = this.getAssignmentTokens();
                 statement =  new AssignmentStatement(name, assignment);
             }
+            // else{
+            //     let expressionTokens = this.getExpressionTokens().unshift(name);
+            //     statement = new Expression(expressionTokens);
+            // }
             else if(nextToken === '('){
+                this.components.shift();
                 let args = this.getArguments();
                 statement = new FunctionCall(name, args);
             }
@@ -160,9 +166,11 @@ class Interpreter{
             return args;
         }
         let currentArgumentTokens = [];
+        let prev = null;
+        let current = null;
         while(this.components.length){
-            
-            let current = this.components[0];
+            prev = current;
+            current = this.components[0];
             if(current === ')'){
                 bracketStack.pop();
                 this.components.shift();
@@ -171,9 +179,17 @@ class Interpreter{
                 }
             }
             else if(current === '('){
-                bracketStack.push(-1);
-                currentArgumentTokens.push(current);
-                this.components.shift();
+                // if(this.isValidIdentifier(prev)){
+                //     this.components.shift();
+                //     current = new FunctionCall(prev, this.getArguments());
+                //     currentArgumentTokens.pop();
+                //     currentArgumentTokens.push(current);
+                // }
+                // else{
+                    bracketStack.push(-1);
+                    currentArgumentTokens.push(current);
+                    this.components.shift();
+                // }
             }
             else if(current === ','){
                 if(currentArgumentTokens.length === 0){
@@ -291,36 +307,31 @@ class Interpreter{
         }
 
         throw new Error('Invalid syntax: conditional statement must be wrapped in parantheses')
-
     }
 
-    getExpression(){
+    getExpression(tokens){
+        
     }
 }
 
-let PyJS = new Interpreter();
-try{
-    PyJS.run(`
-    def f (a, b, c){
-        x = 5;
-        y = 8;
-        main(1, a, a + b(0, 'f(', f(), t), c);
-        if(k + l){
-            k = 10;
-            l = 66;
-        }
-        def f1() {
-            t = 'asda';
-            ;
-            p = " ' fasf ";
-        }
-    }
-    `)
+let Urartu = new Interpreter();
+Urartu.run(`
+    x = 5 + 8 * (c - l);
+`);
+// Urartu.run(`
+//     x = 5;
+//     y = 8;
+//     foo(1, a, a + b(0, 'f(', f(), t), c);
+//     if(k + l){
+//         k = 10;
+//         l = 66;
+//     }
+//     def f1() {
+//         t = 'asda';
+//         ;
+//         p = " ' fasf ";
+//     }
+// `)
 
-}
-catch (e){
-    console.log(e);
-    // console.log(PyJS.components);
-}
 
-console.dir(PyJS.memory['main']);
+console.dir(Urartu.memory['main']);
