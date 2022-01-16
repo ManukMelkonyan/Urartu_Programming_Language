@@ -1,6 +1,10 @@
 class Expression{
     constructor(tokens){
-        // this.expression = tokens.join('');
+        this.tokens = tokens;
+    }
+
+    toString(){
+        return `Expression ${this.tokens.toString()}`;
     }
 }
 
@@ -144,18 +148,18 @@ class Interpreter{
         let tokens = [];
         while(this.components.length){
             let current = this.components.shift();
-            console.log(current);
+            // console.log(current);
             if(current === ';'){
                 break;
             }
 
             tokens.push(current);
         }
-        console.log(this.components);
+        // console.log(this.components);
         return tokens;
     }
 
-    getArguments(tokens){
+    getArguments(){
         let bracketStack = [-1];
         let args = [];
         if(this.components[0] === ','){
@@ -179,17 +183,17 @@ class Interpreter{
                 }
             }
             else if(current === '('){
-                // if(this.isValidIdentifier(prev)){
-                //     this.components.shift();
-                //     current = new FunctionCall(prev, this.getArguments());
-                //     currentArgumentTokens.pop();
-                //     currentArgumentTokens.push(current);
-                // }
-                // else{
+                if(this.isValidIdentifier(prev)){
+                    this.components.shift();
+                    current = new FunctionCall(prev, this.getArguments());
+                    currentArgumentTokens.pop();
+                    currentArgumentTokens.push(current);
+                }
+                else{
                     bracketStack.push(-1);
                     currentArgumentTokens.push(current);
                     this.components.shift();
-                // }
+                }
             }
             else if(current === ','){
                 if(currentArgumentTokens.length === 0){
@@ -197,7 +201,8 @@ class Interpreter{
                 }
                 else{
                     if(bracketStack.length === 1){
-                        args.push(currentArgumentTokens);
+                        const currentExpression = new Expression(currentArgumentTokens);
+                        args.push(currentExpression);
                         currentArgumentTokens = [];
                     }
                     this.components.shift();
@@ -210,7 +215,8 @@ class Interpreter{
             
             if(bracketStack.length === 0){
                 if(currentArgumentTokens.length){
-                    args.push(currentArgumentTokens);
+                    const currentExpression = new Expression(currentArgumentTokens);
+                    args.push(currentExpression);
                 }
                 return args;
             }
@@ -334,4 +340,4 @@ Urartu.run(`
 `)
 
 
-console.dir(Urartu.memory['main']);
+console.log(Urartu.memory['main']);
