@@ -3,3 +3,4 @@ index.html
 /vs
 .vscode/launch.json
 .vs/slnx.sqlite
+node_modules
